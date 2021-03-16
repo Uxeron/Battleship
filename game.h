@@ -16,8 +16,6 @@
 #define submarine 3
 #define destroyer 2
 
-enum ship_types{Carrier, Battleship, Cruiser, Submarine, Destroyer};
-
 // Board cell internal states
 #define empty 0
 #define ship 1
@@ -35,22 +33,19 @@ typedef int game_board[board_size][board_size];
 game_board player_board;
 game_board enemy_board;
 
-int remaining_ships_player;
-int remaining_ships_enemy;
+void game_init(); // Initialize game variables
+void print_board_states(); // Print the entire state of both boards
+bool coords_within_board(int x, int y); // Check if the given coordinates are within a board
 
-void game_init();
-void print_board_states();
-bool coords_within_board(int x, int y);
+bool add_ship(int ship_size, int x, int y, bool horizontal); // Add a ship to the player's board
+bool add_hit_player(int x, int y); // Add a hit to the player's board
+bool add_hit_enemy(int x, int y, int hit_type); // Add a hit to the enemy's board
+bool check_victory(); // Check if the player has won
+bool check_loss(); // Check if the player has lost
 
-bool add_ship(int ship_size, int x, int y, bool horizontal);
-bool add_hit_player(int x, int y);
-bool add_hit_enemy(int x, int y, int hit_type);
-bool check_victory();
-bool check_loss();
+bool input_position(int* x, int* y); // Read position from stdio
+bool input_position_direction(int* x, int* y, bool* horizontal); // Read position and direction from stdio
 
-bool input_position(int* x, int* y);
-bool input_position_direction(int* x, int* y, bool* horizontal);
-
-bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal);
-void add_all_ships_interactive();
-bool add_hit_interactive(int* x_out, int* y_out);
+bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal); // Interactively add a ship to the player's board
+void add_all_ships_interactive(); // Add all ships with interactive add
+bool add_hit_interactive(int* x_out, int* y_out); // Interactively add a hit to the enemy's board

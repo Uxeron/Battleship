@@ -1,11 +1,9 @@
-#include <stdio.h> 
-#include <sys/socket.h> 
-#include <arpa/inet.h> 
-#include <stdlib.h>
-#include <unistd.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <arpa/inet.h> //network constants and funcs
+#include <stdlib.h> //EXIT_*, exit
 #include <stdbool.h>
 #include "game.h"
+#include "common.h"
 #define PORT 8080 
 
 int server_socket;
@@ -36,13 +34,8 @@ void create_connection() {
 	}
 }
 
-int main(int argc, char const *argv[])
-{
-    int valread;
+int main(int argc, char const *argv[]) {
 	char buffer_in[64] = {0};
-    char buffer_out[64] = {0};
-
-    int x, y;
 
 	printf("Attempting connection...\n");
     create_connection();
@@ -55,7 +48,7 @@ int main(int argc, char const *argv[])
 
     send(server_socket, "0", 2, 0);
     printf("Waiting for other player to finish setup...\n");
-    valread = read(server_socket, buffer_in, 64);
+    read_socket(server_socket, buffer_in);
 
     if (buffer_in[0] != '0') {
         perror("Error, invalid data received from server.");
@@ -63,56 +56,8 @@ int main(int argc, char const *argv[])
     }
 
     while (true) {
-        while (true) {
-            printf("Waiting for other player to fire...\n");
-            valread = read(server_socket, buffer_in, 64);
-            if (sscanf(buffer_in, "%d,%d", &x, &y) != 2) {
-                perror("Error, invalid data received from server.");
-                exit(EXIT_FAILURE);
-            }
+        process_enemy_turn(buffer_in, server_socket);
 
-            add_hit_player(x, y);
-            print_board_states();
-            if (player_board[x][y] == 3) {
-                send(server_socket, "1", 2, 0);
-                printf("The other player hit your ship!\n");
-
-                if (check_loss()) {
-                    printf("You lose! Too bad.\n");
-                    exit(EXIT_SUCCESS);
-                }
-
-                continue;
-            } else {
-                send(server_socket, "0", 2, 0);
-                printf("The other player missed.\n");
-                break;
-            }
-        }
-
-        while (true) {
-            add_hit_interactive(&x, &y);
-            sprintf(buffer_out, "%d,%d", x, y);
-            send(server_socket, buffer_out, strlen(buffer_out), 0);
-            valread = read(server_socket, buffer_in, 64);
-
-            if (buffer_in[0] == '1') {
-                add_hit_enemy(x, y, 3);
-                print_board_states();
-                printf("That's a hit!\n");
-
-                if (check_victory()) {
-                    printf("You win! Congratulations!\n");
-                    exit(EXIT_SUCCESS);
-                }
-
-                continue;
-            } else {
-                add_hit_enemy(x, y, 2);
-                print_board_states();
-                printf("That's a miss\n");
-                break;
-            }
-        }
+        process_your_turn(buffer_in, server_socket);
     }
 }

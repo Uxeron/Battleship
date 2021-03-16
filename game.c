@@ -8,6 +8,9 @@ const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "De
 
 const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
 
+int remaining_ships_player;
+int remaining_ships_enemy;
+
 void game_init() {
     // Initialize both boards with 0's
     memset(player_board, 0, sizeof(player_board));
@@ -186,11 +189,15 @@ bool check_loss() {
     return (remaining_ships_player == 0);
 }
 
-bool input_position(int* x, int* y) {
+void clear_stdin() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) { }
+}
+
+bool input_position_raw(int* x, int* y) {
     char x1;
     int y1;
 
-    fflush(stdin);
     if (scanf("%c%i", &x1, &y1) != 2)
         return false;
 
@@ -200,19 +207,30 @@ bool input_position(int* x, int* y) {
     return true;
 }
 
+bool input_position(int* x, int* y) {
+    bool ret = input_position_raw(x, y);
+    clear_stdin();
+    return ret;
+}
+
 bool input_position_direction(int* x, int* y, bool* horizontal) {
-    if (!input_position(x, y)) return false;
+    if (!input_position_raw(x, y)) {
+        clear_stdin();
+        return false;
+    }
 
     char dir;
     if (scanf("%c", &dir) != 1)
         return false;
-    
+
     if (dir == 'h')
         *horizontal = true;
     else if (dir == 'v')
         *horizontal = false;
     else
         return false;
+
+    clear_stdin();
 
     return true;
 }
@@ -230,13 +248,12 @@ bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizonta
         printf("Enter position and direction (no spaces, h - horizontal, v - vertical, example: a5v):\n");
 
         if (!input_position_direction(&x, &y, &h)) {
-            printf("Invalid input. Press enter to try again.\n");
+            printf("Invalid input.\n");
             continue;
         }
 
         if (!add_ship(ship_sizes[ship_type], x, y, h)) {
             printf("Cannot place ship there.\n");
-            scanf("");
             continue;
         }
 
@@ -254,20 +271,10 @@ void add_all_ships_interactive() {
     int x, y;
     bool h;
 
-    add_ship_interactive(Carrier, &x, &y, &h);
-    print_board_states();
-
-    add_ship_interactive(Battleship, &x, &y, &h);
-    print_board_states();
-
-    add_ship_interactive(Cruiser, &x, &y, &h);
-    print_board_states();
-
-    add_ship_interactive(Submarine, &x, &y, &h);
-    print_board_states();
-
-    add_ship_interactive(Destroyer, &x, &y, &h);
-    print_board_states();
+    for (int i = 0; i < ship_count; i++) {
+        add_ship_interactive(i, &x, &y, &h);
+        print_board_states();
+    }
 }
 
 bool add_hit_interactive(int* x_out, int* y_out) {
@@ -278,14 +285,12 @@ bool add_hit_interactive(int* x_out, int* y_out) {
         printf("Enter position (no spaces, example: a5):\n");
 
         if (!input_position(&x, &y)) {
-            printf("Invalid input. \n");
-            scanf("");
+            printf("Invalid input.\n");
             continue;
         }
 
         if (!coords_within_board(x, y) || enemy_board[x][y] != empty) {
-            printf("Cannot shoot there. \n");
-            scanf("");
+            printf("Cannot shoot there.\n");
             continue;
         }
 
