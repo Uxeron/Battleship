@@ -1,48 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-
-// Board defines
-#define board_size 10
-#define board_wall_horizontal "-"
-#define board_wall_vertical "|"
-#define board_wall_corner "+"
-#define label_your_board "Your Board"
-#define label_enemy_board "Enemy Board"
-
-// Ships
-#define ship_count 5
-#define carrier 5
-#define battleship 4
-#define cruiser 3
-#define submarine 3
-#define destroyer 2
-
-enum ship_types{Carrier, Battleship, Cruiser, Submarine, Destroyer};
-const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
-const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
-
-// Board cell internal states
-#define empty 0
-#define ship 1
-#define shot 2 // Hit water
-#define hit 3 // Hit a ship
-
-// Board cell visual states
-#define empty_visual "."
-#define ship_visual "O"
-#define shot_visual "*"
-#define hit_visual "x"
-
-const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
-
-// Game boards
-typedef int game_board[board_size][board_size];
-game_board player_board;
-game_board enemy_board;
-
-int remaining_ships_player;
-int remaining_ships_enemy;
+#include "game.h"
 
 void init() {
     // Initialize both boards with 0's
@@ -211,11 +170,6 @@ bool add_hit_enemy(int x, int y) {
     return true;
 }
 
-void clear_stdin() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF) { }
-}
-
 bool input_position(int* x, int* y) {
     char x1;
     int y1;
@@ -243,8 +197,6 @@ bool input_position_direction(int* x, int* y, bool* horizontal) {
         *horizontal = false;
     else
         return false;
-    
-    clear_stdin();
 
     return true;
 }
@@ -282,6 +234,26 @@ bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizonta
     return true;
 }
 
+void add_all_ships_interactive() {
+    int x, y;
+    bool h;
+
+    add_ship_interactive(Carrier, &x, &y, &h);
+    print_board_states();
+
+    add_ship_interactive(Battleship, &x, &y, &h);
+    print_board_states();
+
+    add_ship_interactive(Cruiser, &x, &y, &h);
+    print_board_states();
+
+    add_ship_interactive(Submarine, &x, &y, &h);
+    print_board_states();
+
+    add_ship_interactive(Destroyer, &x, &y, &h);
+    print_board_states();
+}
+
 bool add_hit_interactive(int* x_out, int* y_out) {
     int x, y;
 
@@ -312,23 +284,10 @@ bool add_hit_interactive(int* x_out, int* y_out) {
 
 int main() {
     init();
-    add_ship(carrier, 6, 0, false);
-    add_ship(battleship, 1, 0, true);
-    add_hit(player_board, 0, 0);
-    add_hit(player_board, 3, 0);
-    add_hit(enemy_board, 5, 5);
 
     print_board_states();
 
-    int x, y;
-    bool h;
-    add_ship_interactive(Carrier, &x, &y, &h);
-
-    print_board_states();
-
-    add_hit_interactive(&x, &y);
-
-    print_board_states();
+    add_all_ships_interactive();
 
     return 0;
 }
