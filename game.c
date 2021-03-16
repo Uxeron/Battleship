@@ -10,25 +10,29 @@
 #define label_your_board "Your Board"
 #define label_enemy_board "Enemy Board"
 
-// Ship sizes
+// Ships
+#define ship_count 5
 #define carrier 5
 #define battleship 4
 #define cruiser 3
 #define submarine 3
 #define destroyer 2
 
+enum ship_types{Carrier, Battleship, Cruiser, Submarine, Destroyer};
+const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
+const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
+
 // Board cell internal states
 #define empty 0
 #define ship 1
-#define shot 2
-#define hit 3
+#define shot 2 // Hit water
+#define hit 3 // Hit a ship
 
 // Board cell visual states
 #define empty_visual "."
 #define ship_visual "O"
 #define shot_visual "*"
 #define hit_visual "x"
-#define target_visual "X"
 
 const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
 
@@ -37,11 +41,16 @@ typedef int game_board[board_size][board_size];
 game_board player_board;
 game_board enemy_board;
 
+int remaining_ships_player;
+int remaining_ships_enemy;
 
 void init() {
     // Initialize both boards with 0's
     memset(player_board, 0, sizeof(player_board));
     memset(enemy_board, 0, sizeof(enemy_board));
+
+    remaining_ships_player = carrier + battleship + cruiser + submarine + destroyer;
+    remaining_ships_enemy = remaining_ships_player;
 }
 
 void print_board_states() {
@@ -186,15 +195,32 @@ bool add_hit(game_board board, int x, int y) {
     return true;
 }
 
+bool add_hit_player(int x, int y) {
+    if (!add_hit(player_board, x, y))
+        return false;
+    
+    remaining_ships_player--;
+    return true;
+}
+
+bool add_hit_enemy(int x, int y) {
+    if (!add_hit(enemy_board, x, y))
+        return false;
+    
+    remaining_ships_enemy--;
+    return true;
+}
+
 void clear_stdin() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) { }
 }
 
-bool input_position_raw(int* x, int* y) {
+bool input_position(int* x, int* y) {
     char x1;
     int y1;
 
+    fflush(stdin);
     if (scanf("%c%i", &x1, &y1) != 2)
         return false;
 
@@ -204,13 +230,8 @@ bool input_position_raw(int* x, int* y) {
     return true;
 }
 
-bool input_position(int* x, int* y) {
-    if (!input_position_raw(x, y)) return false;
-    clear_stdin();
-}
-
 bool input_position_direction(int* x, int* y, bool* horizontal) {
-    if (!input_position_raw(x, y)) return false;
+    if (!input_position(x, y)) return false;
 
     char dir;
     if (scanf("%c", &dir) != 1)
@@ -228,6 +249,67 @@ bool input_position_direction(int* x, int* y, bool* horizontal) {
     return true;
 }
 
+bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal) {
+    int x, y;
+    bool h;
+
+    if (ship_type >= ship_count)
+        return false;
+    
+    printf("Place the %s, size %d cells\n", ship_names[ship_type], ship_sizes[ship_type]);
+
+    while (true) {
+        printf("Enter position and direction (no spaces, h - horizontal, v - vertical, example: a5v):\n");
+
+        if (!input_position_direction(&x, &y, &h)) {
+            printf("Invalid input. Press enter to try again.\n");
+            continue;
+        }
+
+        if (!add_ship(ship_sizes[ship_type], x, y, h)) {
+            printf("Cannot place ship there.\n");
+            scanf("");
+            continue;
+        }
+
+        break;
+    }
+
+    *x_out = x;
+    *y_out = y;
+    *horizontal = h;
+
+    return true;
+}
+
+bool add_hit_interactive(int* x_out, int* y_out) {
+    int x, y;
+
+    printf("Fire at the enemy!\n");
+    while (true) {
+        printf("Enter position (no spaces, example: a5):\n");
+
+        if (!input_position(&x, &y)) {
+            printf("Invalid input. \n");
+            scanf("");
+            continue;
+        }
+
+        if (!add_hit_enemy(x, y)) {
+            printf("Cannot shoot there. \n");
+            scanf("");
+            continue;
+        }
+
+        break;
+    }
+
+    *x_out = x;
+    *y_out = y;
+
+    return true;
+}
+
 int main() {
     init();
     add_ship(carrier, 6, 0, false);
@@ -240,13 +322,11 @@ int main() {
 
     int x, y;
     bool h;
-    input_position_direction(&x, &y, &h);
-    add_ship(carrier, x, y, h);
+    add_ship_interactive(Carrier, &x, &y, &h);
 
     print_board_states();
 
-    input_position(&x, &y);
-    add_hit(player_board, x, y);
+    add_hit_interactive(&x, &y);
 
     print_board_states();
 
