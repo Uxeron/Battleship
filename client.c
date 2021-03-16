@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <arpa/inet.h> //network constants and funcs
+#include <sys/socket.h> //send
+#include <unistd.h> //read
 #include <stdlib.h> //EXIT_*, exit
 #include <stdbool.h>
 #include "game.h"
 #include "common.h"
-#define PORT 8080 
 
 int server_socket;
 
 void create_connection() {
-	struct sockaddr_in serv_addr;
+	struct sockaddr_in server;
 	
 	if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
@@ -17,17 +18,11 @@ void create_connection() {
 		exit(EXIT_FAILURE);
 	}
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(PORT);
-	
-	// Convert IPv4 and IPv6 addresses from text to binary form
-	if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
-	{
-		perror("Invalid address/ Address not supported.");
-		exit(EXIT_FAILURE);
-	}
+	server.sin_family = AF_INET;
+	server.sin_port = htons(PORT);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-	if (connect(server_socket, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
+	if (connect(server_socket, (struct sockaddr*) &server, sizeof(server)) < 0)
 	{
 		perror("Connection Failed.");
 		exit(EXIT_FAILURE);
@@ -35,7 +30,7 @@ void create_connection() {
 }
 
 int main(int argc, char const *argv[]) {
-	char buffer_in[64] = {0};
+	char buffer_in[BUFFER_SIZE] = {0};
 
 	printf("Attempting connection...\n");
     create_connection();

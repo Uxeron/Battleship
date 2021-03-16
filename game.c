@@ -16,7 +16,10 @@ void game_init() {
     memset(player_board, 0, sizeof(player_board));
     memset(enemy_board, 0, sizeof(enemy_board));
 
-    remaining_ships_player = carrier + battleship + cruiser + submarine + destroyer;
+    remaining_ships_player = 0;
+    for (int i = 0; i < ship_count; i++)
+        remaining_ships_player += ship_sizes[i];
+        
     remaining_ships_enemy = remaining_ships_player;
 }
 

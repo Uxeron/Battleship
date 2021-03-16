@@ -1,20 +1,21 @@
 #include <stdio.h>
 #include <sys/socket.h> //send
-#include <stdlib.h> //EXIT_*, exit
 #include <unistd.h> //read
+#include <stdlib.h> //EXIT_*, exit
 #include <string.h> //strlen
 #include <stdbool.h>
 #include "game.h"
+#include "common.h"
 
 void read_socket(int socket, char* buffer_in) {
-    if (read(socket, buffer_in, sizeof(buffer_in) / sizeof(*buffer_in)) == -1) {
+    if (read(socket, buffer_in, BUFFER_SIZE) == -1) {
         perror("Error reading socket data.");
         exit(EXIT_FAILURE);
     }
 }
 
 void process_your_turn(char* buffer_in, int socket) {
-    char buffer_out[64] = {0};
+    char buffer_out[BUFFER_SIZE] = {0};
     int x, y;
 
     while (true) {
