@@ -17,8 +17,6 @@
 #define destroyer 2
 
 enum ship_types{Carrier, Battleship, Cruiser, Submarine, Destroyer};
-const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
-const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
 
 // Board cell internal states
 #define empty 0
@@ -32,8 +30,6 @@ const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "De
 #define shot_visual "*"
 #define hit_visual "x"
 
-const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
-
 // Game boards
 typedef int game_board[board_size][board_size];
 game_board player_board;
@@ -42,14 +38,15 @@ game_board enemy_board;
 int remaining_ships_player;
 int remaining_ships_enemy;
 
-void init();
+void game_init();
 void print_board_states();
 bool coords_within_board(int x, int y);
 
 bool add_ship(int ship_size, int x, int y, bool horizontal);
-bool add_hit(game_board board, int x, int y);
 bool add_hit_player(int x, int y);
-bool add_hit_enemy(int x, int y);
+bool add_hit_enemy(int x, int y, int hit_type);
+bool check_victory();
+bool check_loss();
 
 bool input_position(int* x, int* y);
 bool input_position_direction(int* x, int* y, bool* horizontal);

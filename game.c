@@ -3,7 +3,12 @@
 #include <stdbool.h>
 #include "game.h"
 
-void init() {
+const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
+const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
+
+const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
+
+void game_init() {
     // Initialize both boards with 0's
     memset(player_board, 0, sizeof(player_board));
     memset(enemy_board, 0, sizeof(enemy_board));
@@ -13,6 +18,8 @@ void init() {
 }
 
 void print_board_states() {
+    printf("\n");
+
     // Print labels
     int padding = ((board_size*2 + 3) - strlen(label_your_board)) / 2;
     printf("  %*c", padding, ' ');
@@ -140,34 +147,43 @@ bool add_ship(int ship_size, int x, int y, bool horizontal) {
     return true;
 }
 
-bool add_hit(game_board board, int x, int y) {
+bool add_hit_player(int x, int y) {
     if (!coords_within_board(x, y)) return false;
 
-    if (board[x][y] == shot || board[x][y] == hit)
+    if (player_board[x][y] == shot || player_board[x][y] == hit)
         return false;
     
-    if (board[x][y] == ship)
-        board[x][y] = hit;
-    else 
-        board[x][y] = shot;
+    if (player_board[x][y] == ship) {
+        player_board[x][y] = hit;
+        remaining_ships_player--;
+    } else {
+        player_board[x][y] = shot;
+    }
 
+    
     return true;
 }
 
-bool add_hit_player(int x, int y) {
-    if (!add_hit(player_board, x, y))
+bool add_hit_enemy(int x, int y, int hit_type) {
+    if (!coords_within_board(x, y)) return false;
+
+    if (enemy_board[x][y] == shot || enemy_board[x][y] == hit)
         return false;
+
+    enemy_board[x][y] = hit_type;
     
-    remaining_ships_player--;
+    if (hit_type == hit)
+        remaining_ships_enemy--;
+    
     return true;
 }
 
-bool add_hit_enemy(int x, int y) {
-    if (!add_hit(enemy_board, x, y))
-        return false;
-    
-    remaining_ships_enemy--;
-    return true;
+bool check_victory() {
+    return (remaining_ships_enemy == 0);
+}
+
+bool check_loss() {
+    return (remaining_ships_player == 0);
 }
 
 bool input_position(int* x, int* y) {
@@ -267,7 +283,7 @@ bool add_hit_interactive(int* x_out, int* y_out) {
             continue;
         }
 
-        if (!add_hit_enemy(x, y)) {
+        if (!coords_within_board(x, y) || enemy_board[x][y] != empty) {
             printf("Cannot shoot there. \n");
             scanf("");
             continue;
@@ -280,14 +296,4 @@ bool add_hit_interactive(int* x_out, int* y_out) {
     *y_out = y;
 
     return true;
-}
-
-int main() {
-    init();
-
-    print_board_states();
-
-    add_all_ships_interactive();
-
-    return 0;
 }
