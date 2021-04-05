@@ -54,10 +54,10 @@ int main(int argc, char const *argv[]) {
     create_connection();
     printf("Connection successful, starting game!\n");
 
-    game_init();
+    Game* game = new Game();
 
-    print_board_states();
-    add_all_ships_interactive();
+    game->print_board_states();
+    game->add_all_ships_interactive();
 
     send(client_socket, "0", 2, 0);
     printf("Waiting for other player to finish setup...\n");
@@ -69,9 +69,9 @@ int main(int argc, char const *argv[]) {
     }
 
     while (true) {
-        process_your_turn(buffer_in, client_socket);
+        process_your_turn(game, buffer_in, client_socket);
 
-        process_enemy_turn(buffer_in, client_socket);
+        process_enemy_turn(game, buffer_in, client_socket);
     }
 
     return 0;

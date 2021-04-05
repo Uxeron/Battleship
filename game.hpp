@@ -28,24 +28,38 @@
 #define shot_visual "*"
 #define hit_visual "x"
 
-// Game boards
 typedef int game_board[board_size][board_size];
-extern game_board player_board;
-extern game_board enemy_board;
 
-void game_init(); // Initialize game variables
-void print_board_states(); // Print the entire state of both boards
-bool coords_within_board(int x, int y); // Check if the given coordinates are within a board
+class Game {
+  private:
+    static const int ship_sizes[];
+    static const char* ship_names[];
+    static const char* board_visual[];
 
-bool add_ship(int ship_size, int x, int y, bool horizontal); // Add a ship to the player's board
-bool add_hit_player(int x, int y); // Add a hit to the player's board
-bool add_hit_enemy(int x, int y, int hit_type); // Add a hit to the enemy's board
-bool check_victory(); // Check if the player has won
-bool check_loss(); // Check if the player has lost
+    int remaining_ships_player;
+    int remaining_ships_enemy;
 
-bool input_position(int* x, int* y); // Read position from stdio
-bool input_position_direction(int* x, int* y, bool* horizontal); // Read position and direction from stdio
+    void clear_stdin() const; // Clear current stdin buffer
+    bool input_position_raw(int* x, int* y);
 
-bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal); // Interactively add a ship to the player's board
-void add_all_ships_interactive(); // Add all ships with interactive add
-bool add_hit_interactive(int* x_out, int* y_out); // Interactively add a hit to the enemy's board
+  public:
+    game_board player_board;
+    game_board enemy_board;
+
+    Game(); // Initialize game variables
+    void print_board_states() const; // Print the entire state of both boards
+    bool coords_within_board(int x, int y) const; // Check if the given coordinates are within a board
+
+    bool add_ship(int ship_size, int x, int y, bool horizontal); // Add a ship to the player's board
+    bool add_hit_player(int x, int y); // Add a hit to the player's board
+    bool add_hit_enemy(int x, int y, int hit_type); // Add a hit to the enemy's board
+    bool check_victory() const; // Check if the player has won
+    bool check_loss() const; // Check if the player has lost
+
+    bool input_position(int* x, int* y); // Read position from stdio
+    bool input_position_direction(int* x, int* y, bool* horizontal); // Read position and direction from stdio
+
+    bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal); // Interactively add a ship to the player's board
+    void add_all_ships_interactive(); // Add all ships with interactive add
+    bool add_hit_interactive(int* x_out, int* y_out); // Interactively add a hit to the enemy's board
+};

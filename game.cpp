@@ -3,18 +3,12 @@
 #include <stdbool.h>
 #include "game.hpp"
 
-const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
-const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
 
-const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
+const int Game::ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
+const char* Game::ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
+const char* Game::board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
 
-game_board player_board;
-game_board enemy_board;
-
-int remaining_ships_player;
-int remaining_ships_enemy;
-
-void game_init() {
+Game::Game() {
     // Initialize both boards with 0's
     memset(player_board, 0, sizeof(player_board));
     memset(enemy_board, 0, sizeof(enemy_board));
@@ -26,7 +20,7 @@ void game_init() {
     remaining_ships_enemy = remaining_ships_player;
 }
 
-void print_board_states() {
+void Game::print_board_states() const {
     printf("\n");
 
     // Print labels
@@ -110,13 +104,13 @@ void print_board_states() {
     printf("\n");
 }
 
-bool coords_within_board(int x, int y) {
+bool Game::coords_within_board(int x, int y) const {
     // Check if the xy coordinates are within the board
     return (x >= 0 && x < board_size &&
             y >= 0 && y < board_size);
 }
 
-bool add_ship(int ship_size, int x, int y, bool horizontal) {
+bool Game::add_ship(int ship_size, int x, int y, bool horizontal) {
     if (!coords_within_board(x, y)) return false;
     
     // Check if the ship fits in the board
@@ -156,7 +150,7 @@ bool add_ship(int ship_size, int x, int y, bool horizontal) {
     return true;
 }
 
-bool add_hit_player(int x, int y) {
+bool Game::add_hit_player(int x, int y) {
     if (!coords_within_board(x, y)) return false;
 
     if (player_board[x][y] == shot || player_board[x][y] == hit)
@@ -168,12 +162,11 @@ bool add_hit_player(int x, int y) {
     } else {
         player_board[x][y] = shot;
     }
-
     
     return true;
 }
 
-bool add_hit_enemy(int x, int y, int hit_type) {
+bool Game::add_hit_enemy(int x, int y, int hit_type) {
     if (!coords_within_board(x, y)) return false;
 
     if (enemy_board[x][y] == shot || enemy_board[x][y] == hit)
@@ -187,20 +180,20 @@ bool add_hit_enemy(int x, int y, int hit_type) {
     return true;
 }
 
-bool check_victory() {
+bool Game::check_victory() const {
     return (remaining_ships_enemy == 0);
 }
 
-bool check_loss() {
+bool Game::check_loss() const {
     return (remaining_ships_player == 0);
 }
 
-void clear_stdin() {
+void Game::clear_stdin() const {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) { }
 }
 
-bool input_position_raw(int* x, int* y) {
+bool Game::input_position_raw(int* x, int* y) {
     char x1;
     int y1;
 
@@ -213,13 +206,13 @@ bool input_position_raw(int* x, int* y) {
     return true;
 }
 
-bool input_position(int* x, int* y) {
+bool Game::input_position(int* x, int* y) {
     bool ret = input_position_raw(x, y);
     clear_stdin();
     return ret;
 }
 
-bool input_position_direction(int* x, int* y, bool* horizontal) {
+bool Game::input_position_direction(int* x, int* y, bool* horizontal) {
     if (!input_position_raw(x, y)) {
         clear_stdin();
         return false;
@@ -241,7 +234,7 @@ bool input_position_direction(int* x, int* y, bool* horizontal) {
     return true;
 }
 
-bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal) {
+bool Game::add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizontal) {
     int x, y;
     bool h;
 
@@ -273,7 +266,7 @@ bool add_ship_interactive(int ship_type, int* x_out, int* y_out, bool* horizonta
     return true;
 }
 
-void add_all_ships_interactive() {
+void Game::add_all_ships_interactive() {
     int x, y;
     bool h;
 
@@ -283,7 +276,7 @@ void add_all_ships_interactive() {
     }
 }
 
-bool add_hit_interactive(int* x_out, int* y_out) {
+bool Game::add_hit_interactive(int* x_out, int* y_out) {
     int x, y;
 
     printf("Fire at the enemy!\n");

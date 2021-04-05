@@ -14,37 +14,37 @@ void read_socket(int socket, char* buffer_in) {
     }
 }
 
-void process_your_turn(char* buffer_in, int socket) {
+void process_your_turn(Game* game, char* buffer_in, int socket) {
     char buffer_out[BUFFER_SIZE] = {0};
     int x, y;
 
     while (true) {
-        add_hit_interactive(&x, &y);
+        game->add_hit_interactive(&x, &y);
         sprintf(buffer_out, "%d,%d", x, y);
         send(socket, buffer_out, strlen(buffer_out), 0);
         read_socket(socket, buffer_in);
 
         if (buffer_in[0] == '1') {
-            add_hit_enemy(x, y, 3);
-            print_board_states();
+            game->add_hit_enemy(x, y, 3);
+            game->print_board_states();
             printf("That's a hit!\n");
 
-            if (check_victory()) {
+            if (game->check_victory()) {
                 printf("You win! Congratulations!\n");
                 exit(EXIT_SUCCESS);
             }
 
             continue;
         } else {
-            add_hit_enemy(x, y, 2);
-            print_board_states();
+            game->add_hit_enemy(x, y, 2);
+            game->print_board_states();
             printf("That's a miss.\n");
             break;
         }
     }
 }
 
-void process_enemy_turn(char* buffer_in, int socket) {
+void process_enemy_turn(Game* game, char* buffer_in, int socket) {
     int x, y;
 
     while (true) {
@@ -55,13 +55,13 @@ void process_enemy_turn(char* buffer_in, int socket) {
             exit(EXIT_FAILURE);
         }
 
-        add_hit_player(x, y);
-        print_board_states();
-        if (player_board[x][y] == 3) {
+        game->add_hit_player(x, y);
+        game->print_board_states();
+        if (game->player_board[x][y] == 3) {
             send(socket, "1", 2, 0);
             printf("The other player hit your ship!\n");
 
-            if (check_loss()) {
+            if (game->check_loss()) {
                 printf("You lose! Too bad.\n");
                 exit(EXIT_SUCCESS);
             }
