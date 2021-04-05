@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "game.h"
+#include "game.hpp"
 
 const int ship_sizes[] = {carrier, battleship, cruiser, submarine, destroyer};
 const char* ship_names[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
 
 const char* board_visual[] = {empty_visual, ship_visual, shot_visual, hit_visual};
+
+game_board player_board;
+game_board enemy_board;
 
 int remaining_ships_player;
 int remaining_ships_enemy;

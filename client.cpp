@@ -4,8 +4,8 @@
 #include <unistd.h> //read
 #include <stdlib.h> //EXIT_*, exit
 #include <stdbool.h>
-#include "game.h"
-#include "common.h"
+#include "game.hpp"
+#include "common.hpp"
 
 int server_socket;
 

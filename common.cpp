@@ -4,8 +4,8 @@
 #include <stdlib.h> //EXIT_*, exit
 #include <string.h> //strlen
 #include <stdbool.h>
-#include "game.h"
-#include "common.h"
+#include "game.hpp"
+#include "common.hpp"
 
 void read_socket(int socket, char* buffer_in) {
     if (read(socket, buffer_in, BUFFER_SIZE) == -1) {

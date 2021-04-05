@@ -30,8 +30,8 @@
 
 // Game boards
 typedef int game_board[board_size][board_size];
-game_board player_board;
-game_board enemy_board;
+extern game_board player_board;
+extern game_board enemy_board;
 
 void game_init(); // Initialize game variables
 void print_board_states(); // Print the entire state of both boards
