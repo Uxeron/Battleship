@@ -6,12 +6,40 @@
 #include <stdbool.h>
 #include <string>
 #include <string.h>
+#include <signal.h>
 #include "game.hpp"
 
 #define PORT 8080 
 #define BUFFER_SIZE 64
 
+// Used for sending the signal
+#define SERVER_DISCONNECT_S "8"
+#define CLIENT_DISCONNECT_S "9"
+
+// Used for receiving the signal
+#define SERVER_DISCONNECT_R '8'
+#define CLIENT_DISCONNECT_R '9'
+
+#define READY_S "5"
+#define READY_R '5'
+
 int server_socket;
+
+struct sigaction old_action;
+
+void handle_disconnect(char* buffer_in) {
+    if (strlen(buffer_in) != 1) return;
+
+    if (buffer_in[0] == SERVER_DISCONNECT_R) {
+        printf("Ending game, server disconnected!\n");
+        exit(EXIT_SUCCESS);
+    }
+
+    if (buffer_in[0] == CLIENT_DISCONNECT_R) {
+        printf("Ending game, opponent disconnected!\n");
+        exit(EXIT_SUCCESS);
+    }
+}
 
 void create_connection(std::string name) {
 	struct sockaddr_in server;
@@ -41,6 +69,8 @@ void read_socket(int socket, char* buffer_in) {
         perror("Error reading socket data.");
         exit(EXIT_FAILURE);
     }
+
+    handle_disconnect(buffer_in);
 }
 
 void process_your_turn(Game* game, char* buffer_in, int socket) {
@@ -61,7 +91,7 @@ void process_your_turn(Game* game, char* buffer_in, int socket) {
             if (game->check_victory()) {
                 printf("You win! Congratulations!\n");
 
-                send(socket, "9", 2, 0); // 9 - connection end message
+                send(socket, CLIENT_DISCONNECT_S, 2, 0); // 9 - connection end message
                 exit(EXIT_SUCCESS);
             }
 
@@ -106,7 +136,21 @@ void process_enemy_turn(Game* game, char* buffer_in, int socket) {
     }
 }
 
+void sigint_handler(int sig_no)
+{
+    send(server_socket, CLIENT_DISCONNECT_S, 2, 0);
+    close(server_socket);
+
+    sigaction(SIGINT, &old_action, NULL);
+    kill(0, SIGINT);
+}
+
 int main(int argc, char const *argv[]) {
+    // Setup ctrl+c capture
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = &sigint_handler;
+    sigaction(SIGINT, &action, &old_action);
 	char buffer_in[BUFFER_SIZE] = {0};
 
     char name[100];
@@ -140,11 +184,11 @@ int main(int argc, char const *argv[]) {
     game.print_board_states();
     game.add_all_ships_interactive();
 
-    send(server_socket, "5", 2, 0);
+    send(server_socket, READY_S, 2, 0);
     printf("Waiting for other player to finish setup...\n");
     read_socket(server_socket, buffer_in);
 
-    if (buffer_in[0] != '5') {
+    if (buffer_in[0] != READY_R) {
         perror("Error, invalid data received from server.");
         exit(EXIT_FAILURE);
     }

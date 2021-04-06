@@ -9,10 +9,20 @@
 #include <utility>
 #include <errno.h>
 #include <string>
+#include <string.h>
 #include <time.h>
+#include <signal.h>
 
 #define PORT 8080 
 #define BUFFER_SIZE 64
+
+// Used for sending the signal
+#define SERVER_DISCONNECT_S "8"
+#define CLIENT_DISCONNECT_S "9"
+
+// Used for receiving the signal
+#define SERVER_DISCONNECT_R '8'
+#define CLIENT_DISCONNECT_R '9'
 
 int server_fd;
 struct sockaddr_in server;
@@ -23,6 +33,8 @@ char buffer_in[BUFFER_SIZE] = {0};
 int waiting_player = 0;
 std::string waiting_player_name;
 std::vector<std::pair<int, int>> player_pairs;
+
+struct sigaction old_action;
 
 void make_socket_non_blocking(int socket) {
     int flags = fcntl(socket, F_GETFL);
@@ -38,7 +50,7 @@ void make_socket_non_blocking(int socket) {
 }
 
 void setup_listening() {
-    // Creating socket file descriptor
+    // Create listening socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
@@ -50,7 +62,7 @@ void setup_listening() {
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(PORT);
     
-    // Attaching socket
+    // Attach socket
     if (bind(server_fd, (struct sockaddr*) &server, sizeof(server)) < 0) {
         perror("Bind failed.");
         exit(EXIT_FAILURE);
@@ -79,7 +91,7 @@ void accept_new_players() {
         }
 
         // Read the new player's name
-        if (read(new_player, buffer_in, BUFFER_SIZE) == -1) {
+        if (recv(new_player, buffer_in, BUFFER_SIZE, 0) == -1) {
             perror("Error reading socket data.");
             exit(EXIT_FAILURE);
         }
@@ -96,12 +108,12 @@ void accept_new_players() {
             player_pairs.push_back(new_player_pair);
 
             // Notify the currently waiting player about the new player
+            nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
             send(waiting_player, "1", 2, 0);
             send(waiting_player, new_player_name.c_str(), new_player_name.length() + 1, 0);
 
-            nanosleep((const struct timespec[]){{0, 1000000L}}, NULL);
-
             // Notify the new player about the waiting player
+            nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
             send(new_player, "0", 2, 0);
             send(new_player, waiting_player_name.c_str(), waiting_player_name.length() + 1, 0);
 
@@ -124,7 +136,7 @@ bool retransmit_player_messages(int player1, int player2) {
             exit(EXIT_FAILURE);
         }
     } else {
-        if (recv_size == 2 && buffer_in[0] == '9') {
+        if (recv_size == 2 && buffer_in[0] == CLIENT_DISCONNECT_R) {
             printf("Player id %i sent a quit message.\n", player1);
             // Send the connection termination message
             send(player2, buffer_in, recv_size, 0);
@@ -138,6 +150,22 @@ bool retransmit_player_messages(int player1, int player2) {
 }
 
 void retransmit_all_player_messages() {
+    if (waiting_player != 0) {
+        int recv_size = 0;
+        if ((recv_size = recv(waiting_player, buffer_in, BUFFER_SIZE, 0)) == -1) {
+            if (errno != EWOULDBLOCK) {
+                perror("Receive failed.");
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            if (recv_size == 2 && buffer_in[0] == CLIENT_DISCONNECT_R) {
+                printf("Waiting player id %i sent a quit message.\n", waiting_player);
+                waiting_player = 0;
+                waiting_player_name = "";
+            }
+        }
+    }
+
     for (int i = 0; i < player_pairs.size(); i++) {
         auto player1 = player_pairs[i].first;
         auto player2 = player_pairs[i].second;
@@ -148,6 +176,7 @@ void retransmit_all_player_messages() {
             close(player2);
             player_pairs.erase(player_pairs.begin() + i);
             i--;
+            continue;
         }
 
         if (retransmit_player_messages(player2, player1)) {
@@ -156,11 +185,34 @@ void retransmit_all_player_messages() {
             close(player2);
             player_pairs.erase(player_pairs.begin() + i);
             i--;
+            continue;
         }
     }
 }
 
+void sigint_handler(int sig_no)
+{
+    printf("CTRL-C pressed\n");
+
+    if (waiting_player != 0)
+        send(waiting_player, SERVER_DISCONNECT_S, 2, 0);
+
+    for (int i = 0; i < player_pairs.size(); i++) {
+        send(player_pairs[i].first, SERVER_DISCONNECT_S, 2, 0);
+        send(player_pairs[i].second, SERVER_DISCONNECT_S, 2, 0);
+    }
+
+    sigaction(SIGINT, &old_action, NULL);
+    kill(0, SIGINT);
+}
+
 int main(int argc, char const *argv[]) {
+    // Setup ctrl+c capture
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = &sigint_handler;
+    sigaction(SIGINT, &action, &old_action);
+
     printf("Setting up listening socket...\n");
     setup_listening();
     printf("Setup done, listening for connections.\n");
