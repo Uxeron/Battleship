@@ -9,6 +9,7 @@
 #include <utility>
 #include <errno.h>
 #include <string>
+#include <time.h>
 
 #define PORT 8080 
 #define BUFFER_SIZE 64
@@ -22,14 +23,6 @@ char buffer_in[BUFFER_SIZE] = {0};
 int waiting_player = 0;
 std::string waiting_player_name;
 std::vector<std::pair<int, int>> player_pairs;
-std::vector<std::pair<bool, bool>> player_readyness_state;
-
-void read_socket(int socket, char* buffer_in) {
-    if (read(socket, buffer_in, BUFFER_SIZE) == -1) {
-        perror("Error reading socket data.");
-        exit(EXIT_FAILURE);
-    }
-}
 
 void make_socket_non_blocking(int socket) {
     int flags = fcntl(socket, F_GETFL);
@@ -85,14 +78,12 @@ void accept_new_players() {
             }
         }
 
-        int read_size = 0;
-
         // Read the new player's name
-        if ((read_size = read(new_player, buffer_in, BUFFER_SIZE)) == -1) {
+        if (read(new_player, buffer_in, BUFFER_SIZE) == -1) {
             perror("Error reading socket data.");
             exit(EXIT_FAILURE);
         }
-        //read_socket(new_player, buffer_in);
+
         std::string new_player_name(buffer_in);
         printf("New player '%s' connected. (%i)\n", new_player_name.c_str(), new_player);
 
@@ -103,11 +94,12 @@ void accept_new_players() {
         } else {
             std::pair<int, int> new_player_pair(waiting_player, new_player);
             player_pairs.push_back(new_player_pair);
-            player_readyness_state.push_back(std::pair<bool, bool>());
 
             // Notify the currently waiting player about the new player
             send(waiting_player, "1", 2, 0);
             send(waiting_player, new_player_name.c_str(), new_player_name.length() + 1, 0);
+
+            nanosleep((const struct timespec[]){{0, 1000000L}}, NULL);
 
             // Notify the new player about the waiting player
             send(new_player, "0", 2, 0);
@@ -123,7 +115,7 @@ void accept_new_players() {
     }
 }
 
-bool retransmit_player_messages(int player1, int player2, bool* ready_state_1, bool* ready_state_2) {
+bool retransmit_player_messages(int player1, int player2) {
     int recv_size = 0;
 
     if ((recv_size = recv(player1, buffer_in, BUFFER_SIZE, 0)) == -1) {
@@ -139,14 +131,6 @@ bool retransmit_player_messages(int player1, int player2, bool* ready_state_1, b
             return true;
         }
 
-        /*if (recv_size == 2 && buffer_in[0] == '5' && *ready_state_1 == false) {
-            *ready_state_1 = true;
-            if (*ready_state_2 == false) // other player not ready yet
-                return false;
-            else
-                send(player1, buffer_in, recv_size, 0); // other player is also ready, notify of the game start
-        }*/
-
         send(player2, buffer_in, recv_size, 0);
     }
 
@@ -158,24 +142,19 @@ void retransmit_all_player_messages() {
         auto player1 = player_pairs[i].first;
         auto player2 = player_pairs[i].second;
 
-        bool* ready_state_1 = &(player_readyness_state[i].first);
-        bool* ready_state_2 = &(player_readyness_state[i].second);
-
-        if (retransmit_player_messages(player1, player2, ready_state_1, ready_state_2)) {
+        if (retransmit_player_messages(player1, player2)) {
             // Connection terminate message received
             close(player1);
             close(player2);
             player_pairs.erase(player_pairs.begin() + i);
-            player_readyness_state.erase(player_readyness_state.begin() + i);
             i--;
         }
 
-        if (retransmit_player_messages(player2, player1, ready_state_2, ready_state_1)) {
+        if (retransmit_player_messages(player2, player1)) {
             // Connection terminate message received
             close(player1);
             close(player2);
             player_pairs.erase(player_pairs.begin() + i);
-            player_readyness_state.erase(player_readyness_state.begin() + i);
             i--;
         }
     }
