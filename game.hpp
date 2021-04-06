@@ -39,7 +39,6 @@ class Game {
     int remaining_ships_player;
     int remaining_ships_enemy;
 
-    void clear_stdin() const; // Clear current stdin buffer
     bool input_position_raw(int* x, int* y);
 
   public:
@@ -56,6 +55,7 @@ class Game {
     bool check_victory() const; // Check if the player has won
     bool check_loss() const; // Check if the player has lost
 
+    void clear_stdin() const; // Clear current stdin buffer
     bool input_position(int* x, int* y); // Read position from stdio
     bool input_position_direction(int* x, int* y, bool* horizontal); // Read position and direction from stdio
 

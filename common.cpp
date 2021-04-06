@@ -31,6 +31,8 @@ void process_your_turn(Game* game, char* buffer_in, int socket) {
 
             if (game->check_victory()) {
                 printf("You win! Congratulations!\n");
+
+                send(socket, "9", 2, 0); // 9 - connection end message
                 exit(EXIT_SUCCESS);
             }
 
