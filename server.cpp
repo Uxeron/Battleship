@@ -167,8 +167,8 @@ void retransmit_all_player_messages() {
     }
 
     for (int i = 0; i < player_pairs.size(); i++) {
-        auto player1 = player_pairs[i].first;
-        auto player2 = player_pairs[i].second;
+        int player1 = player_pairs[i].first;
+        int player2 = player_pairs[i].second;
 
         if (retransmit_player_messages(player1, player2)) {
             // Connection terminate message received

@@ -151,9 +151,9 @@ int main(int argc, char const *argv[]) {
     memset(&action, 0, sizeof(action));
     action.sa_handler = &sigint_handler;
     sigaction(SIGINT, &action, &old_action);
-	char buffer_in[BUFFER_SIZE] = {0};
 
-    char name[100];
+	char buffer_in[BUFFER_SIZE] = {0};
+    char name[BUFFER_SIZE];
 
     printf("Enter your name: ");
     scanf("%s", &name);
